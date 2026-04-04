@@ -38,7 +38,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      ["@rnmapbox/maps", { "RNMapboxMapsDownloadToken": "YOUR_MAPBOX_TOKEN" }]
     ],
     "experiments": {
       "typedRoutes": true,
