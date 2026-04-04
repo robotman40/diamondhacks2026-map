@@ -10,7 +10,7 @@ router = fastapi.APIRouter()
 http_client = httpx.AsyncClient()
 
 @router.get("/calculate_route")
-async def calculate_route(f_lon, f_lat, l_lon, l_lat):
+async def calculate_route(f_lat, f_lon, l_lat, l_lon):
     response = await http_client.post(
         'https://graphhopper.com/api/1/route', 
         
