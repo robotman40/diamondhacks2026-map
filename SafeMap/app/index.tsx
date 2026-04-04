@@ -5,11 +5,12 @@ export default function Index() {
     <View
       style={{
         flex: 1,
-        justifyContent: "center",
+        justifyContent: "flex-start",
         alignItems: "center",
       }}
     >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
+      <Text style={{ fontSize: 50, fontWeight: 'bold' }}>SafeRoute</Text>
+      <Text>Never worry about routes again!</Text>
     </View>
   );
 }
