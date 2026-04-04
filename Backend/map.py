@@ -9,8 +9,11 @@ import datetime
 
 dotenv.load_dotenv()
 
+router = fastapi.APIRouter()
+
 GRAPHOPPER_API_KEY = os.getenv('GH_API_KEY')
 
+@router.get("/get_routes")
 def get_routes(start_lat, start_lon, destinationlat,destination_long, alternatives=3):
     params = {
         "point": [f"{start_lat},{start_lon}", f"{destinationlat},{destination_long}"],
@@ -34,6 +37,7 @@ def get_routes(start_lat, start_lon, destinationlat,destination_long, alternativ
         })
     return routes
 
+@router.get('/get_near_crimes')
 def get_near_crimes(routes):
     BUFFER_DISTANCE_DEGREES = 0.00045  # Roughly ~50m, approx conversion
 
