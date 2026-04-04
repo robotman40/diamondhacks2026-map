@@ -43,12 +43,6 @@ export default function Index() {
       <Text style={{ fontSize: 50, fontWeight: 'bold' }}>SafeRoute</Text>
       <Text>Never worry about routes again!</Text>
 
-      <Text>Username</Text>
-      <TextInput></TextInput>
-
-      <Text>Password</Text>
-      <TextInput></TextInput>
-
     </View>
   );
 }
