@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Users } from "lucide-react-native";
+import { Users } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
 import MapViewComponent from "@/components/MapView";
 import { fetchRoutes, formatDuration, Route } from "@/lib/routeService";
 import { useLocation, UCSD_DEFAULT } from "@/hooks/useLocation";
 import { loadProfile } from "@/lib/profileService";
+import { MATCHED_BUDDIES } from "./buddy-found";
 
 export default function RouteMapBuddy() {
   const router = useRouter();
@@ -92,14 +93,11 @@ export default function RouteMapBuddy() {
 
       <SafeAreaView className="absolute top-0 left-0 right-0" edges={["top"]}>
         <View className="flex-row items-center justify-between px-4 mt-2">
-          <View className="flex-row items-center gap-3">
-            <Pressable onPress={() => router.back()}>
-              <ArrowLeft size={24} color={Colors.textPrimary} />
-            </Pressable>
-            <View>
-              <Text className="text-white font-bold text-base">{destName}</Text>
-              <Text className="text-text-muted text-xs">Walking with Jamie S.</Text>
-            </View>
+          <View>
+            <Text className="text-white font-bold text-base">{destName}</Text>
+            <Text className="text-text-muted text-xs">
+              Walking with {MATCHED_BUDDIES.join(" & ")}
+            </Text>
           </View>
 
           <Pressable
@@ -112,7 +110,9 @@ export default function RouteMapBuddy() {
             }
           >
             <Users size={16} color={Colors.accent} />
-            <Text className="text-accent text-sm font-semibold">Group</Text>
+            <Text className="text-accent text-sm font-semibold">
+              Group ({MATCHED_BUDDIES.length})
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
