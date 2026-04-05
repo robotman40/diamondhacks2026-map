@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, FlatList } from "react-native";
-import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, Search as SearchIcon, MapPin } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
+import { useRouter } from "expo-router";
+import { ArrowLeft, MapPin, Search as SearchIcon } from "lucide-react-native";
+import React, { useState } from "react";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const recentLocations = [
   { id: "1", name: "Campus Library" },
