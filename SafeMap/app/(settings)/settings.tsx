@@ -154,6 +154,9 @@ export default function Settings() {
               if (uri) setDraft((d) => d ? { ...d, photoUri: uri } : d);
             } : undefined}
           />
+          {editing && (
+            <Text className="text-text-muted text-xs mt-2">{draft?.photoUri ? "Tap to change photo" : "Add Photo"}</Text>
+          )}
           <Text className="text-white font-bold text-lg mt-2">{profile.displayName}</Text>
           <Text className="text-text-muted text-sm">{profile.email}</Text>
           {profile.department ? (
