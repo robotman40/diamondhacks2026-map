@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MapViewComponent from "@/components/MapView";
-import { Route } from "@/lib/routeService";
 import { useLocation, UCSD_DEFAULT } from "@/hooks/useLocation";
 import { loadProfile } from "@/lib/profileService";
+import { getActiveRoute, clearActiveRoute } from "@/lib/routeStore";
+import { formatDistance, formatDuration } from "@/lib/routeService";
 
 export default function WalkingSolo() {
   const router = useRouter();
@@ -15,9 +16,6 @@ export default function WalkingSolo() {
     destLat?: string;
     destLng?: string;
     timeEstimate?: string;
-    routeCoords?: string;
-    distanceMeters?: string;
-    timeSeconds?: string;
   }>();
 
   const [emergencyContact, setEmergencyContact] = useState<string>("");
@@ -26,16 +24,8 @@ export default function WalkingSolo() {
   const destLng = params.destLng ? parseFloat(params.destLng) : -117.2378;
   const destName = params.destName ?? "Destination";
 
-  // Use the route that was already calculated on the previous screen
-  const route = useMemo<Route | null>(() => {
-    if (!params.routeCoords) return null;
-    return {
-      id: "active",
-      coordinates: JSON.parse(params.routeCoords) as [number, number][],
-      distanceMeters: params.distanceMeters ? parseFloat(params.distanceMeters) : 0,
-      timeSeconds: params.timeSeconds ? parseFloat(params.timeSeconds) : 0,
-    };
-  }, [params.routeCoords]);
+  // Read the route that was saved by route-map — same object, no re-fetch
+  const route = getActiveRoute();
 
   useEffect(() => {
     loadProfile().then((p) => {
@@ -73,14 +63,16 @@ export default function WalkingSolo() {
       { text: "Cancel", style: "cancel" },
       {
         text: "End Walk",
-        onPress: () =>
+        onPress: () => {
+          clearActiveRoute();
           router.push({
             pathname: "/walk-completed",
             params: {
               distance: route ? String(route.distanceMeters) : undefined,
               time: route ? String(route.timeSeconds) : undefined,
             },
-          }),
+          });
+        },
       },
     ]);
   }
@@ -92,6 +84,8 @@ export default function WalkingSolo() {
         routeCoordinates={route?.coordinates ?? []}
         centerCoordinate={[centerLng, centerLat]}
         zoomLevel={15}
+        showUserLocation
+        followUser
       />
 
       <SafeAreaView className="absolute top-0 left-0 right-0" edges={["top"]}>
@@ -102,11 +96,15 @@ export default function WalkingSolo() {
       </SafeAreaView>
 
       <View className="absolute bottom-0 left-0 right-0 bg-surface rounded-t-2xl p-4 pb-8">
-        {timeDisplay && (
-          <Text className="text-text-muted text-sm text-center mb-4">
-            Estimated arrival in{" "}
-            <Text className="text-white font-semibold">{timeDisplay}</Text>
-          </Text>
+        {route && (
+          <View className="mb-4">
+            <Text className="text-text-muted text-sm text-center">
+              {formatDistance(route.distanceMeters)} · Est.{" "}
+              <Text className="text-white font-semibold">
+                {timeDisplay ?? formatDuration(route.timeSeconds)}
+              </Text>
+            </Text>
+          </View>
         )}
 
         <View className="flex-row gap-3">

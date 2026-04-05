@@ -9,10 +9,12 @@ export type Route = {
   amenities?: unknown;
 };
 
+export const FALLBACK_ROUTE_ID = "fallback_library_walk";
+
 // Fallback route (Library Walk N-S axis) used when the backend is unreachable.
 // Coordinates sit on the pedestrian path — no building phase-through.
 const FALLBACK_ROUTE: Route = {
-  id: "fallback_library_walk",
+  id: FALLBACK_ROUTE_ID,
   coordinates: [
     [-117.2374, 32.8793],
     [-117.2374, 32.8798],
@@ -47,7 +49,7 @@ export async function fetchRoutes(
     `&dest_lat=${destLat}&dest_lon=${destLng}`;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
 
   try {
     const response = await fetch(url, {

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import RNMapView, { Polyline, PROVIDER_GOOGLE } from "react-native-maps";
+import type { UserLocationChangeEvent } from "react-native-maps";
 
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0f1a2e" }] },
@@ -18,6 +19,8 @@ type Props = {
   routeCoordinates?: [number, number][];
   centerCoordinate?: [number, number];
   zoomLevel?: number;
+  showUserLocation?: boolean;
+  followUser?: boolean;
   children?: React.ReactNode;
 };
 
@@ -30,10 +33,23 @@ export default function MapViewComponent({
   routeCoordinates = [],
   centerCoordinate = [-117.2340, 32.8801],
   zoomLevel = 15,
+  showUserLocation = false,
+  followUser = false,
   children,
 }: Props) {
+  const mapRef = useRef<RNMapView>(null);
   const [longitude, latitude] = centerCoordinate;
   const delta = zoomToLatitudeDelta(zoomLevel);
+
+  function handleUserLocationChange(event: UserLocationChangeEvent) {
+    if (!followUser) return;
+    const coord = event.nativeEvent.coordinate;
+    if (!coord) return;
+    mapRef.current?.animateCamera(
+      { center: { latitude: coord.latitude, longitude: coord.longitude }, zoom: 17 },
+      { duration: 600 }
+    );
+  }
 
   const polylineCoords = routeCoordinates.map(([lng, lat]) => ({
     latitude: lat,
@@ -43,9 +59,13 @@ export default function MapViewComponent({
   return (
     <View style={styles.container}>
       <RNMapView
+        ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
         customMapStyle={DARK_MAP_STYLE}
+        showsUserLocation={showUserLocation}
+        showsMyLocationButton={false}
+        onUserLocationChange={handleUserLocationChange}
         initialRegion={{
           latitude,
           longitude,

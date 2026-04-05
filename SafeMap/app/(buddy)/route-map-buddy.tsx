@@ -96,6 +96,8 @@ export default function RouteMapBuddy() {
           routeCoordinates={route?.coordinates ?? []}
           centerCoordinate={[centerLng, centerLat]}
           zoomLevel={15}
+          showUserLocation
+          followUser
         />
       )}
 
