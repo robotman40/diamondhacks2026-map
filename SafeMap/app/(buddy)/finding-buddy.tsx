@@ -33,7 +33,7 @@ export default function FindingBuddy() {
     }).start();
 
     const timeout = setTimeout(() => {
-      router.replace("/buddy-found");
+      router.replace("./buddy-found");
     }, 3500);
 
     return () => clearTimeout(timeout);
