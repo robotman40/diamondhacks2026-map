@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, UserCheck } from "lucide-react-native";
@@ -74,7 +74,20 @@ export default function YourGroup() {
         </Pressable>
         <Pressable
           className="bg-danger rounded-xl py-4 items-center"
-          onPress={() => router.back()}
+          onPress={() =>
+            Alert.alert(
+              "Leave Group",
+              "Leaving the group will end your current route. Are you sure?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Leave & End Route",
+                  style: "destructive",
+                  onPress: () => router.push("/walk-completed"),
+                },
+              ]
+            )
+          }
         >
           <Text className="text-white font-bold text-base">Leave Group</Text>
         </Pressable>

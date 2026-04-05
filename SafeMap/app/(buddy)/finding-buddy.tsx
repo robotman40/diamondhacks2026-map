@@ -1,12 +1,17 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Users } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
 
 export default function FindingBuddy() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    destName?: string;
+    destLat?: string;
+    destLng?: string;
+  }>();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -33,7 +38,14 @@ export default function FindingBuddy() {
     }).start();
 
     const timeout = setTimeout(() => {
-      router.replace("./buddy-found");
+      router.replace({
+        pathname: "./buddy-found",
+        params: {
+          destName: params.destName,
+          destLat: params.destLat,
+          destLng: params.destLng,
+        },
+      });
     }, 3500);
 
     return () => clearTimeout(timeout);

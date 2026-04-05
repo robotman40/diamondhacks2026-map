@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { UserCheck } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
@@ -8,6 +8,11 @@ import BuddyCard from "@/components/BuddyCard";
 
 export default function BuddyFound() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    destName?: string;
+    destLat?: string;
+    destLng?: string;
+  }>();
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -20,7 +25,10 @@ export default function BuddyFound() {
         </Text>
 
         <View className="w-full mt-6">
-          <BuddyCard name="Jamie S." subtitle="Walking to: Library" />
+          <BuddyCard
+            name="Jamie S."
+            subtitle={`Walking to: ${params.destName ?? "Destination"}`}
+          />
         </View>
 
         <Text className="text-text-muted text-sm mt-4">
@@ -31,7 +39,16 @@ export default function BuddyFound() {
       <View className="px-4 pb-4">
         <Pressable
           className="bg-accent rounded-xl py-4 items-center"
-          onPress={() => router.push("/route-map-buddy")}
+          onPress={() =>
+            router.push({
+              pathname: "/route-map-buddy",
+              params: {
+                destName: params.destName,
+                destLat: params.destLat,
+                destLng: params.destLng,
+              },
+            })
+          }
         >
           <Text className="text-background font-bold text-base">
             Start Navigation
