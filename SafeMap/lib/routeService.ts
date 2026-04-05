@@ -1,13 +1,4 @@
-// Route service — fetches pedestrian routes from the FastAPI + GraphHopper backend.
-//
-// Backend endpoint: GET /map/get_routes
-//   ?start_lat=&start_lon=&destinationlat=&destination_long=&alternatives=3
-//
-// Set EXPO_PUBLIC_BACKEND_URL in .env.local to point at the backend.
-// Example (LAN dev): EXPO_PUBLIC_BACKEND_URL=http://192.168.1.100:8000
-
-const BACKEND_URL =
-  process.env.EXPO_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL ?? "http://147.135.115.199:8000";
 
 export type Route = {
   id: string;
@@ -17,20 +8,24 @@ export type Route = {
   timeSeconds: number;
 };
 
+export type RouteWithAmenities = {
+  route: Route;
+  amenities: unknown;
+};
+
 // UCSD Library Walk fallback — used when the backend is unreachable.
-// Coordinates trace the actual pedestrian path rather than a straight line.
 const FALLBACK_ROUTES: Route[] = [
   {
     id: "route_1",
     coordinates: [
-      [-117.2365, 32.8793], // Price Center East entrance
-      [-117.2367, 32.8799], // Library Walk – south section
+      [-117.2365, 32.8793],
+      [-117.2367, 32.8799],
       [-117.2369, 32.8806],
       [-117.2371, 32.8812],
-      [-117.2372, 32.8819], // Library Walk – mid section
+      [-117.2372, 32.8819],
       [-117.2373, 32.8825],
-      [-117.2374, 32.8831], // Approaching Geisel Library
-      [-117.2374, 32.8836], // Geisel Library entrance
+      [-117.2374, 32.8831],
+      [-117.2374, 32.8836],
     ],
     distanceMeters: 600,
     timeSeconds: 450,
@@ -38,48 +33,50 @@ const FALLBACK_ROUTES: Route[] = [
 ];
 
 /**
- * Fetch walking routes from the backend.
- *
- * @param originLat      Starting latitude  (e.g. 32.8793)
- * @param originLng      Starting longitude (e.g. -117.2365)
- * @param destLat        Destination latitude
- * @param destLng        Destination longitude
- * @param alternatives   Number of alternative routes (default 3)
+ * Fetch the safest walking route from the backend.
+ * Calls POST /api/safest-route with start/dest coordinates as query params.
  */
 export async function fetchRoutes(
   originLat: number,
   originLng: number,
   destLat: number,
-  destLng: number,
-  alternatives = 3
+  destLng: number
 ): Promise<Route[]> {
   const url =
-    `${BACKEND_URL}/map/get_routes` +
+    `${BACKEND_URL}/api/safest-route` +
     `?start_lat=${originLat}&start_lon=${originLng}` +
-    `&destinationlat=${destLat}&destination_long=${destLng}` +
-    `&alternatives=${alternatives}`;
+    `&dest_lat=${destLat}&dest_lon=${destLng}`;
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const response = await fetch(url, {
+      method: "POST",
+      signal: AbortSignal.timeout(10000),
+    });
     if (!response.ok) throw new Error(`Backend ${response.status}`);
 
-    const data = await response.json();
+    const data = await response.json() as {
+      route: {
+        route_id?: string;
+        distance_m?: number;
+        time_s?: number;
+        coordinates?: [number, number][];
+      };
+      amenities: unknown;
+    };
 
-    // Backend returns coordinates as [lat, lng] pairs.
-    // MapView expects [lng, lat] — swap here.
-    return (data as Array<{
-      route_id: string;
-      distance_m: number;
-      time_s: number;
-      coordinates: [number, number][];
-    }>).map((r) => ({
-      id: r.route_id,
-      distanceMeters: r.distance_m,
-      timeSeconds: r.time_s,
+    const r = data.route;
+    if (!r || !Array.isArray(r.coordinates)) return FALLBACK_ROUTES;
+
+    // Backend returns coordinates as [lat, lng] — MapView expects [lng, lat]
+    const route: Route = {
+      id: r.route_id ?? "safest",
+      distanceMeters: r.distance_m ?? 0,
+      timeSeconds: r.time_s ?? 0,
       coordinates: r.coordinates.map(([lat, lng]) => [lng, lat] as [number, number]),
-    }));
+    };
+
+    return [route];
   } catch {
-    // Backend not reachable — return fallback so the map always shows something.
     return FALLBACK_ROUTES;
   }
 }

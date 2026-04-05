@@ -9,9 +9,6 @@ import RouteCard from "@/components/RouteCard";
 import { fetchRoutes, formatDistance, formatDuration, Route } from "@/lib/routeService";
 import { useLocation, UCSD_DEFAULT } from "@/hooks/useLocation";
 
-// The matched group for this session — shared with route-map-buddy and your-group
-export const MATCHED_BUDDIES = ["Jamie S.", "Alex M. (Psych)"];
-
 export default function BuddyFound() {
   const router = useRouter();
   const { coords } = useLocation();
@@ -19,7 +16,13 @@ export default function BuddyFound() {
     destName?: string;
     destLat?: string;
     destLng?: string;
+    buddyUserIds?: string;
+    groupId?: string;
   }>();
+
+  const buddies: string[] = params.buddyUserIds
+    ? (JSON.parse(params.buddyUserIds) as string[])
+    : ["Buddy 1"];
 
   const [route, setRoute] = useState<Route | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(true);
@@ -64,7 +67,7 @@ export default function BuddyFound() {
           <View>
             <Text className="text-white font-bold text-base">{destName}</Text>
             <Text className="text-accent text-xs font-semibold">
-              {MATCHED_BUDDIES.length} {MATCHED_BUDDIES.length === 1 ? "buddy" : "buddies"} matched
+              {buddies.length} {buddies.length === 1 ? "buddy" : "buddies"} matched
             </Text>
           </View>
         </View>
@@ -75,7 +78,7 @@ export default function BuddyFound() {
         {/* Group members */}
         <Text className="text-text-muted text-xs font-semibold mb-2">YOUR GROUP</Text>
         <View className="flex-row gap-2 mb-4">
-          {MATCHED_BUDDIES.map((name) => (
+          {buddies.map((name: string) => (
             <View
               key={name}
               className="flex-row items-center gap-1.5 bg-background rounded-xl px-3 py-1.5"
@@ -123,6 +126,8 @@ export default function BuddyFound() {
                 destLat: params.destLat,
                 destLng: params.destLng,
                 timeEstimate: route ? formatDuration(route.timeSeconds) : undefined,
+                buddyUserIds: params.buddyUserIds,
+                groupId: params.groupId,
               },
             })
           }

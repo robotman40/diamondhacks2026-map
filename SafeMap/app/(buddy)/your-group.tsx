@@ -7,15 +7,18 @@ import { Colors } from "@/constants/colors";
 import BuddyCard from "@/components/BuddyCard";
 import { loadProfile } from "@/lib/profileService";
 
-const otherMembers = [
-  { name: "Alex M. (Psych)", subtitle: "2 min away" },
-  { name: "Jamie S.", subtitle: "En route to meet you" },
-];
-
 export default function YourGroup() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ destName?: string }>();
+  const params = useLocalSearchParams<{
+    destName?: string;
+    buddyUserIds?: string;
+    groupId?: string;
+  }>();
   const [selfName, setSelfName] = useState("You");
+
+  const otherMembers: string[] = params.buddyUserIds
+    ? (JSON.parse(params.buddyUserIds) as string[])
+    : [];
 
   useEffect(() => {
     loadProfile().then((p) => {
@@ -51,8 +54,8 @@ export default function YourGroup() {
           </View>
 
           {/* Others */}
-          {otherMembers.map((member) => (
-            <BuddyCard key={member.name} name={member.name} subtitle={member.subtitle} />
+          {otherMembers.map((id) => (
+            <BuddyCard key={id} name={id} subtitle="En route to meet you" />
           ))}
         </View>
       </View>
