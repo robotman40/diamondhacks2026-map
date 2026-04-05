@@ -1,50 +1,68 @@
-# Welcome to your Expo app 👋
+# WalkBack — Campus Safety Navigation
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+WalkBack is a mobile safety app for college students walking alone or in groups at night. It calculates the safest walking route to your destination using well-lit corridors and high-traffic paths, then guides you with live GPS tracking.
 
-## Get started
+**Solo Walk** — Get a safety-optimized route to your destination with a one-tap SOS button that alerts your emergency contact with your current location.
 
-1. Install dependencies
+**Buddy System** — Match with nearby students heading in the same direction and walk together. Everyone in the group has access to the shared map and SOS feature.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+- **Frontend**: React Native, Expo SDK 54, Expo Router, NativeWind (TailwindCSS)
+- **Maps**: `react-native-maps` with Google Maps provider, dark map styling, live GPS tracking
+- **Backend**: FastAPI (Python) deployed on Render — `POST /api/safest-route`
+- **Routing**: GraphHopper with safety-aware path scoring
+- **Storage**: AsyncStorage (on-device, no account required)
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Getting Started
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Prerequisites
 
-## Get a fresh project
+- Node.js v20+
+- Expo Go app on your phone
+- A `.env.local` file in the `SafeMap/` directory with the following keys:
 
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+EXPO_PUBLIC_BACKEND_URL=
+EXPO_PUBLIC_GH_API_KEY=
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_MAPBOX_TOKEN=
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Install & Run
 
-## Learn more
+```bash
+npm install
+npx expo start --tunnel
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Scan the QR code with Expo Go on your phone.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## Project Structure
 
-Join our community of developers creating universal apps.
+```
+SafeMap/
+├── app/                  # Screens (file-based routing via Expo Router)
+│   ├── (navigation)/     # Home, search, route map
+│   ├── (walking)/        # Solo walk, walk completed
+│   ├── (buddy)/          # Buddy matching, group walk
+│   ├── (settings)/       # Settings, emergency contact
+│   └── (onboarding)/     # Profile setup
+├── components/           # Shared UI components (MapView, RouteCard, etc.)
+├── hooks/                # useLocation
+├── lib/                  # routeService, routeStore, profileService
+└── constants/            # Colors, theme
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## Backend
+
+The backend repository handles safety-aware route calculation using GraphHopper and is deployed separately on Render. On first request after inactivity, the server may take up to 60 seconds to wake up — the app retries automatically.
