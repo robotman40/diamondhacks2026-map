@@ -47,7 +47,7 @@ export async function fetchRoutes(
     `&dest_lat=${destLat}&dest_lon=${destLng}`;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     const response = await fetch(url, {
