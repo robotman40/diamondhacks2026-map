@@ -10,10 +10,12 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, User, Pencil, Check, X, LogOut } from "lucide-react-native";
+import { ArrowLeft, Pencil, Check, X, LogOut } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
 import ToggleRow from "@/components/ToggleRow";
 import { loadProfile, saveProfile, clearProfile, UserProfile } from "@/lib/profileService";
+import ProfileAvatar from "@/components/ProfileAvatar";
+import { pickProfilePhoto } from "@/hooks/usePhotoPicker";
 
 export default function Settings() {
   const router = useRouter();
@@ -144,9 +146,14 @@ export default function Settings() {
 
         {/* Avatar */}
         <View className="items-center mt-6">
-          <View className="w-20 h-20 rounded-full bg-surface items-center justify-center">
-            <User size={28} color={Colors.textMuted} />
-          </View>
+          <ProfileAvatar
+            uri={draft?.photoUri}
+            size={80}
+            onPress={editing ? async () => {
+              const uri = await pickProfilePhoto();
+              if (uri) setDraft((d) => d ? { ...d, photoUri: uri } : d);
+            } : undefined}
+          />
           <Text className="text-white font-bold text-lg mt-2">{profile.displayName}</Text>
           <Text className="text-text-muted text-sm">{profile.email}</Text>
           {profile.department ? (

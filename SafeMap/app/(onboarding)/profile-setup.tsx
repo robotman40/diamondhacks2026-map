@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Check } from "lucide-react-native";
+import { Check } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
 import { saveProfile } from "@/lib/profileService";
+import ProfileAvatar from "@/components/ProfileAvatar";
+import { pickProfilePhoto } from "@/hooks/usePhotoPicker";
 
 type FieldErrors = {
   displayName?: string;
@@ -27,8 +29,14 @@ export default function ProfileSetup() {
   const [campus, setCampus] = useState("");
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+
+  async function handlePickPhoto() {
+    const uri = await pickProfilePhoto();
+    if (uri) setPhotoUri(uri);
+  }
 
   function validate(): boolean {
     const next: FieldErrors = {};
@@ -49,7 +57,11 @@ export default function ProfileSetup() {
     if (!validate()) return;
     setSaving(true);
     try {
-      await saveProfile({ displayName, email, phone, department, campus, emergencyName, emergencyContact });
+      await saveProfile({
+        displayName, email, phone, department, campus,
+        emergencyName, emergencyContact,
+        photoUri: photoUri ?? undefined,
+      });
       router.replace("/home");
     } catch {
       Alert.alert("Error", "Could not save your profile. Please try again.");
@@ -75,10 +87,10 @@ export default function ProfileSetup() {
           </Text>
 
           <View className="items-center mt-6">
-            <View className="w-20 h-20 rounded-full bg-surface items-center justify-center">
-              <Camera size={28} color={Colors.textMuted} />
-            </View>
-            <Text className="text-text-muted text-xs mt-2">Add Photo</Text>
+            <ProfileAvatar uri={photoUri} size={80} onPress={handlePickPhoto} />
+            <Text className="text-text-muted text-xs mt-2">
+              {photoUri ? "Tap to change photo" : "Add Photo"}
+            </Text>
           </View>
 
           <Text className="text-text-muted text-sm font-semibold mt-8 mb-4">Personal Info</Text>
@@ -179,7 +191,7 @@ export default function ProfileSetup() {
                   {isReady && <Check size={20} color={Colors.background} />}
                 </>
               )}
-              </Pressable>
+            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

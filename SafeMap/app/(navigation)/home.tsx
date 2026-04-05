@@ -7,17 +7,18 @@ import { Colors } from "@/constants/colors";
 import MapViewComponent from "@/components/MapView";
 import { useLocation, UCSD_DEFAULT } from "@/hooks/useLocation";
 import { loadProfile } from "@/lib/profileService";
+import ProfileAvatar from "@/components/ProfileAvatar";
 
 export default function Home() {
   const router = useRouter();
   const { coords, loading } = useLocation();
   const [firstName, setFirstName] = useState<string>("");
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile().then((p) => {
-      if (p?.displayName) {
-        setFirstName(p.displayName.split(" ")[0]);
-      }
+      if (p?.displayName) setFirstName(p.displayName.split(" ")[0]);
+      if (p?.photoUri) setPhotoUri(p.photoUri);
     });
   }, []);
 
@@ -40,11 +41,14 @@ export default function Home() {
       <SafeAreaView className="absolute top-0 left-0 right-0" edges={["top"]}>
         <View className="flex-row items-center justify-between px-4 mt-2">
           {firstName ? (
-            <View className="bg-surface/90 rounded-2xl px-4 py-2">
-              <Text className="text-text-muted text-xs">Welcome back</Text>
-              <Text className="text-white font-bold text-base leading-tight">
-                Hello, {firstName} 👋
-              </Text>
+            <View className="bg-surface/90 rounded-2xl pl-2 pr-4 py-2 flex-row items-center gap-3">
+              <ProfileAvatar uri={photoUri} size={36} />
+              <View>
+                <Text className="text-text-muted text-xs">Welcome back</Text>
+                <Text className="text-white font-bold text-base leading-tight">
+                  Hello, {firstName} 👋
+                </Text>
+              </View>
             </View>
           ) : (
             <View />

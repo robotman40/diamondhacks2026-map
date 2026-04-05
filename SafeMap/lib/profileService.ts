@@ -11,6 +11,7 @@ export type UserProfile = {
   campus?: string;
   emergencyName: string;
   emergencyContact: string;
+  photoUri?: string;
 };
 
 // ---------------------------------------------------------------------------

@@ -41,6 +41,13 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "CampusSafe needs access to your photos so you can set a profile picture.",
+          "cameraPermission": "CampusSafe needs access to your camera so you can take a profile photo."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "CampusSafe needs your location to show your position on the map and calculate the safest walking route.",
