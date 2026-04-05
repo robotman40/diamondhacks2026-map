@@ -65,6 +65,7 @@ export default function MapViewComponent({
         customMapStyle={DARK_MAP_STYLE}
         showsUserLocation={showUserLocation}
         showsMyLocationButton={false}
+        legalLabelInsets={{ bottom: -100, left: 0, top: 0, right: 0 }}
         onUserLocationChange={handleUserLocationChange}
         initialRegion={{
           latitude,

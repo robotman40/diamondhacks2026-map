@@ -29,6 +29,7 @@ export default function Home() {
       <MapViewComponent
         centerCoordinate={[center.longitude, center.latitude]}
         zoomLevel={15}
+        showUserLocation
       />
 
       {loading && (
