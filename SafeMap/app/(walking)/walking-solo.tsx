@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { View, Text, Pressable, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Colors } from "@/constants/colors";
 import MapViewComponent from "@/components/MapView";
-import { fetchRoutes, formatDuration, Route } from "@/lib/routeService";
+import { Route } from "@/lib/routeService";
 import { useLocation, UCSD_DEFAULT } from "@/hooks/useLocation";
 import { loadProfile } from "@/lib/profileService";
 
@@ -16,15 +15,27 @@ export default function WalkingSolo() {
     destLat?: string;
     destLng?: string;
     timeEstimate?: string;
+    routeCoords?: string;
+    distanceMeters?: string;
+    timeSeconds?: string;
   }>();
 
-  const [route, setRoute] = useState<Route | null>(null);
-  const [loadingRoute, setLoadingRoute] = useState(true);
   const [emergencyContact, setEmergencyContact] = useState<string>("");
 
   const destLat = params.destLat ? parseFloat(params.destLat) : 32.8812;
   const destLng = params.destLng ? parseFloat(params.destLng) : -117.2378;
   const destName = params.destName ?? "Destination";
+
+  // Use the route that was already calculated on the previous screen
+  const route = useMemo<Route | null>(() => {
+    if (!params.routeCoords) return null;
+    return {
+      id: "active",
+      coordinates: JSON.parse(params.routeCoords) as [number, number][],
+      distanceMeters: params.distanceMeters ? parseFloat(params.distanceMeters) : 0,
+      timeSeconds: params.timeSeconds ? parseFloat(params.timeSeconds) : 0,
+    };
+  }, [params.routeCoords]);
 
   useEffect(() => {
     loadProfile().then((p) => {
@@ -32,17 +43,7 @@ export default function WalkingSolo() {
     });
   }, []);
 
-  useEffect(() => {
-    const origin = coords ?? UCSD_DEFAULT;
-    fetchRoutes(origin.latitude, origin.longitude, destLat, destLng).then((r) => {
-      setRoute(r[0] ?? null);
-      setLoadingRoute(false);
-    });
-  }, [coords]);
-
-  const timeDisplay =
-    params.timeEstimate ??
-    (route ? formatDuration(route.timeSeconds) : null);
+  const timeDisplay = params.timeEstimate ?? null;
 
   const origin = coords ?? UCSD_DEFAULT;
   const centerLng = (origin.longitude + destLng) / 2;
@@ -86,18 +87,12 @@ export default function WalkingSolo() {
 
   return (
     <View className="flex-1 bg-background">
-      {loadingRoute ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={Colors.accent} />
-        </View>
-      ) : (
-        <MapViewComponent
-          showRoute={!!route}
-          routeCoordinates={route?.coordinates ?? []}
-          centerCoordinate={[centerLng, centerLat]}
-          zoomLevel={15}
-        />
-      )}
+      <MapViewComponent
+        showRoute={!!route}
+        routeCoordinates={route?.coordinates ?? []}
+        centerCoordinate={[centerLng, centerLat]}
+        zoomLevel={15}
+      />
 
       <SafeAreaView className="absolute top-0 left-0 right-0" edges={["top"]}>
         <View className="px-4 mt-2">

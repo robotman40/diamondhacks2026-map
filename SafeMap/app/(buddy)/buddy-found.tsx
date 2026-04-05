@@ -9,6 +9,8 @@ import RouteCard from "@/components/RouteCard";
 import { fetchRoutes, formatDistance, formatDuration, Route } from "@/lib/routeService";
 import { useLocation, UCSD_DEFAULT } from "@/hooks/useLocation";
 
+export const MATCHED_BUDDIES = ["Jamie S.", "Alex M. (Psych)"];
+
 export default function BuddyFound() {
   const router = useRouter();
   const { coords } = useLocation();
@@ -16,13 +18,7 @@ export default function BuddyFound() {
     destName?: string;
     destLat?: string;
     destLng?: string;
-    buddyUserIds?: string;
-    groupId?: string;
   }>();
-
-  const buddies: string[] = params.buddyUserIds
-    ? (JSON.parse(params.buddyUserIds) as string[])
-    : ["Buddy 1"];
 
   const [route, setRoute] = useState<Route | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(true);
@@ -58,7 +54,6 @@ export default function BuddyFound() {
         />
       )}
 
-      {/* Top bar — no back button (arrived via replace) */}
       <SafeAreaView className="absolute top-0 left-0 right-0" edges={["top"]}>
         <View className="px-4 mt-2 flex-row items-center gap-2">
           <View className="w-7 h-7 rounded-full bg-accent/20 items-center justify-center">
@@ -67,18 +62,16 @@ export default function BuddyFound() {
           <View>
             <Text className="text-white font-bold text-base">{destName}</Text>
             <Text className="text-accent text-xs font-semibold">
-              {buddies.length} {buddies.length === 1 ? "buddy" : "buddies"} matched
+              {MATCHED_BUDDIES.length} {MATCHED_BUDDIES.length === 1 ? "buddy" : "buddies"} matched
             </Text>
           </View>
         </View>
       </SafeAreaView>
 
-      {/* Bottom sheet */}
       <View className="absolute bottom-0 left-0 right-0 bg-surface rounded-t-2xl p-4 pb-8">
-        {/* Group members */}
         <Text className="text-text-muted text-xs font-semibold mb-2">YOUR GROUP</Text>
         <View className="flex-row gap-2 mb-4">
-          {buddies.map((name: string) => (
+          {MATCHED_BUDDIES.map((name) => (
             <View
               key={name}
               className="flex-row items-center gap-1.5 bg-background rounded-xl px-3 py-1.5"
@@ -91,7 +84,6 @@ export default function BuddyFound() {
           ))}
         </View>
 
-        {/* Route stats */}
         {loadingRoute ? (
           <View className="items-center py-4">
             <ActivityIndicator color={Colors.accent} />
@@ -126,8 +118,6 @@ export default function BuddyFound() {
                 destLat: params.destLat,
                 destLng: params.destLng,
                 timeEstimate: route ? formatDuration(route.timeSeconds) : undefined,
-                buddyUserIds: params.buddyUserIds,
-                groupId: params.groupId,
               },
             })
           }

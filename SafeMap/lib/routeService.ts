@@ -1,4 +1,4 @@
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL ?? "http://147.135.115.199:8000";
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL ?? "https://diamond-safety.onrender.com";
 
 export type Route = {
   id: string;
@@ -6,35 +6,34 @@ export type Route = {
   coordinates: [number, number][];
   distanceMeters: number;
   timeSeconds: number;
+  amenities?: unknown;
 };
 
-export type RouteWithAmenities = {
-  route: Route;
-  amenities: unknown;
+// Fallback route (Library Walk N-S axis) used when the backend is unreachable.
+// Coordinates sit on the pedestrian path — no building phase-through.
+const FALLBACK_ROUTE: Route = {
+  id: "fallback_library_walk",
+  coordinates: [
+    [-117.2374, 32.8793],
+    [-117.2374, 32.8798],
+    [-117.2374, 32.8803],
+    [-117.2374, 32.8808],
+    [-117.2374, 32.8813],
+    [-117.2374, 32.8818],
+    [-117.2374, 32.8823],
+    [-117.2374, 32.8828],
+    [-117.2374, 32.8833],
+    [-117.2374, 32.8836],
+  ],
+  distanceMeters: 540,
+  timeSeconds: 390,
 };
-
-// UCSD Library Walk fallback — used when the backend is unreachable.
-const FALLBACK_ROUTES: Route[] = [
-  {
-    id: "route_1",
-    coordinates: [
-      [-117.2365, 32.8793],
-      [-117.2367, 32.8799],
-      [-117.2369, 32.8806],
-      [-117.2371, 32.8812],
-      [-117.2372, 32.8819],
-      [-117.2373, 32.8825],
-      [-117.2374, 32.8831],
-      [-117.2374, 32.8836],
-    ],
-    distanceMeters: 600,
-    timeSeconds: 450,
-  },
-];
 
 /**
  * Fetch the safest walking route from the backend.
- * Calls POST /api/safest-route with start/dest coordinates as query params.
+ * POST /api/safest-route?start_lat=&start_lon=&dest_lat=&dest_lon=
+ *
+ * Falls back to a hardcoded Library Walk route if the server is unreachable.
  */
 export async function fetchRoutes(
   originLat: number,
@@ -47,12 +46,20 @@ export async function fetchRoutes(
     `?start_lat=${originLat}&start_lon=${originLng}` +
     `&dest_lat=${destLat}&dest_lon=${destLng}`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
   try {
     const response = await fetch(url, {
       method: "POST",
-      signal: AbortSignal.timeout(10000),
+      signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`Backend ${response.status}`);
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`[routeService] Backend returned ${response.status}`);
+      return [FALLBACK_ROUTE];
+    }
 
     const data = await response.json() as {
       route: {
@@ -65,7 +72,10 @@ export async function fetchRoutes(
     };
 
     const r = data.route;
-    if (!r || !Array.isArray(r.coordinates)) return FALLBACK_ROUTES;
+    if (!r || !Array.isArray(r.coordinates) || r.coordinates.length === 0) {
+      console.warn("[routeService] Invalid route data from backend, using fallback");
+      return [FALLBACK_ROUTE];
+    }
 
     // Backend returns coordinates as [lat, lng] — MapView expects [lng, lat]
     const route: Route = {
@@ -73,11 +83,14 @@ export async function fetchRoutes(
       distanceMeters: r.distance_m ?? 0,
       timeSeconds: r.time_s ?? 0,
       coordinates: r.coordinates.map(([lat, lng]) => [lng, lat] as [number, number]),
+      amenities: data.amenities,
     };
 
     return [route];
-  } catch {
-    return FALLBACK_ROUTES;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn("[routeService] Backend unreachable, using fallback:", err);
+    return [FALLBACK_ROUTE];
   }
 }
 

@@ -90,6 +90,9 @@ export default function RouteMap() {
                 destLat: params.destLat,
                 destLng: params.destLng,
                 timeEstimate: activeRoute ? formatDuration(activeRoute.timeSeconds) : undefined,
+                routeCoords: activeRoute ? JSON.stringify(activeRoute.coordinates) : undefined,
+                distanceMeters: activeRoute ? String(activeRoute.distanceMeters) : undefined,
+                timeSeconds: activeRoute ? String(activeRoute.timeSeconds) : undefined,
               },
             })
           }
