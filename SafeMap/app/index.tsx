@@ -32,12 +32,12 @@ export default function Welcome() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 items-center justify-center px-4">
-        <ShieldCheck size={48} color={Colors.accent} />
-        <Text className="text-white text-3xl font-bold mt-6 text-center">
-          Welcome to CampusSafe
+        <ShieldCheck size={70} color={Colors.accent} />
+        <Text className="text-white text-7xl font-bold mt-6 text-center">
+          WalkBack
         </Text>
         <Text className="text-text-muted text-sm mt-2 text-center">
-          A safer community for your campus walking
+          Student safety, one step at a time
         </Text>
       </View>
       <View className="px-4 pb-4">
@@ -46,7 +46,7 @@ export default function Welcome() {
           onPress={() => router.push("/profile-setup")}
         >
           <Text className="text-background font-bold text-base">
-            Start with CampusSafe ID
+            Start with entering CampusSafe ID
           </Text>
           <ArrowRight size={20} color={Colors.background} />
         </Pressable>

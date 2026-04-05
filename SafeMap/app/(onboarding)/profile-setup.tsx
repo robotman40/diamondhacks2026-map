@@ -83,7 +83,7 @@ export default function ProfileSetup() {
         <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <Text className="text-white text-2xl font-bold mt-6">Set Up Your Profile</Text>
           <Text className="text-text-muted text-sm mt-2">
-            Fill in details to help your walking buddies connect with you
+            Input details so your walking buddies connect with you
           </Text>
 
           <View className="items-center mt-6">
