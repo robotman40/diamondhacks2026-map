@@ -81,9 +81,9 @@ export default function YourGroup() {
               [
                 { text: "Cancel", style: "cancel" },
                 {
-                  text: "Leave & End Route",
+                  text: "Leave Group",
                   style: "destructive",
-                  onPress: () => router.push("/walk-completed"),
+                  onPress: () => router.replace("/home"),
                 },
               ]
             )

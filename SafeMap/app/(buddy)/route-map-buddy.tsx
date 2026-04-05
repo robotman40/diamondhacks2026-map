@@ -71,7 +71,15 @@ export default function RouteMapBuddy() {
       { text: "Cancel", style: "cancel" },
       {
         text: "End Walk",
-        onPress: () => router.push("/walk-completed"),
+        onPress: () =>
+          router.push({
+            pathname: "/walk-completed",
+            params: {
+              distance: route ? String(route.distanceMeters) : undefined,
+              time: route ? String(route.timeSeconds) : undefined,
+              buddies: MATCHED_BUDDIES.join(","),
+            },
+          }),
       },
     ]);
   }
