@@ -26,7 +26,7 @@ def get_routes(start_lat, start_lon, destination_lat,destination_long, alternati
         "alternative_route.max_paths": alternatives,
         "key": GRAPHOPPER_API_KEY
     }
-    response = requests.get(GRAPHOPPER_URL + "/route", params=params)
+    response = requests.get(GRAPHOPPER_URL, params=params)
     data = response.json()
     routes = []
     for idx, r in enumerate(data["paths"]):
@@ -46,7 +46,6 @@ def get_routes(start_lat, start_lon, destination_lat,destination_long, alternati
         })
     return routes
 
-@router.get('/get_near_crimes')
 def get_near_crimes(routes):
     BUFFER_DISTANCE_DEGREES = 0.00045  # Roughly ~50m, approx conversion
 
