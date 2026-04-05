@@ -1,12 +1,33 @@
-import React from "react";
-import { View, Text, Pressable } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ShieldCheck, ArrowRight } from "lucide-react-native";
+import { Text, Pressable } from "react-native";
 import { Colors } from "@/constants/colors";
+import { isProfileComplete } from "@/lib/profileService";
 
 export default function Welcome() {
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    isProfileComplete().then((complete) => {
+      if (complete) {
+        router.replace("/home");
+      } else {
+        setChecking(false);
+      }
+    });
+  }, []);
+
+  if (checking) {
+    return (
+      <View className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator color={Colors.accent} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-background">

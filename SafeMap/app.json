@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.SafeMap"
     },
     "web": {
       "output": "static",
@@ -39,7 +40,20 @@
           }
         }
       ],
-      ["@rnmapbox/maps", { "RNMapboxMapsDownloadToken": "YOUR_MAPBOX_TOKEN" }]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CampusSafe needs access to your photos so you can set a profile picture.",
+          "cameraPermission": "CampusSafe needs access to your camera so you can take a profile photo."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "CampusSafe needs your location to show your position on the map and calculate the safest walking route.",
+          "locationWhenInUsePermission": "CampusSafe needs your location to show your position on the map and calculate the safest walking route."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

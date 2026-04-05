@@ -2,20 +2,21 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Users } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
 import MapViewComponent from "@/components/MapView";
 import { fetchRoutes, formatDuration, Route } from "@/lib/routeService";
 import { useLocation, UCSD_DEFAULT } from "@/hooks/useLocation";
 import { loadProfile } from "@/lib/profileService";
+import { MATCHED_BUDDIES } from "./buddy-found";
 
-export default function WalkingSolo() {
+export default function RouteMapBuddy() {
   const router = useRouter();
   const { coords } = useLocation();
   const params = useLocalSearchParams<{
     destName?: string;
     destLat?: string;
     destLng?: string;
-    timeEstimate?: string;
   }>();
 
   const [route, setRoute] = useState<Route | null>(null);
@@ -40,13 +41,11 @@ export default function WalkingSolo() {
     });
   }, [coords]);
 
-  const timeDisplay =
-    params.timeEstimate ??
-    (route ? formatDuration(route.timeSeconds) : null);
-
   const origin = coords ?? UCSD_DEFAULT;
   const centerLng = (origin.longitude + destLng) / 2;
   const centerLat = (origin.latitude + destLat) / 2;
+
+  const timeDisplay = route ? formatDuration(route.timeSeconds) : null;
 
   function handleSOS() {
     Alert.alert(
@@ -78,6 +77,7 @@ export default function WalkingSolo() {
             params: {
               distance: route ? String(route.distanceMeters) : undefined,
               time: route ? String(route.timeSeconds) : undefined,
+              buddies: MATCHED_BUDDIES.join(","),
             },
           }),
       },
@@ -100,9 +100,28 @@ export default function WalkingSolo() {
       )}
 
       <SafeAreaView className="absolute top-0 left-0 right-0" edges={["top"]}>
-        <View className="px-4 mt-2">
-          <Text className="text-white text-lg font-bold">{destName}</Text>
-          <Text className="text-text-muted text-xs">Guided Solo Walk</Text>
+        <View className="flex-row items-center justify-between px-4 mt-2">
+          <View>
+            <Text className="text-white font-bold text-base">{destName}</Text>
+            <Text className="text-text-muted text-xs">
+              Walking with {MATCHED_BUDDIES.join(" & ")}
+            </Text>
+          </View>
+
+          <Pressable
+            className="bg-surface rounded-xl px-3 py-2 flex-row items-center gap-2"
+            onPress={() =>
+              router.push({
+                pathname: "/your-group",
+                params: { destName: params.destName },
+              })
+            }
+          >
+            <Users size={16} color={Colors.accent} />
+            <Text className="text-accent text-sm font-semibold">
+              Group ({MATCHED_BUDDIES.length})
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
 
