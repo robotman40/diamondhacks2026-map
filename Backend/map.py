@@ -12,6 +12,7 @@ dotenv.load_dotenv()
 router = fastapi.APIRouter()
 
 GRAPHOPPER_API_KEY = os.getenv('GH_API_KEY')
+GRAPHOPPER_URL = "https://graphhopper.com/api/1"
 
 @router.get("/get_routes")
 def get_routes(start_lat, start_lon, destinationlat,destination_long, alternatives=3):
@@ -24,7 +25,7 @@ def get_routes(start_lat, start_lon, destinationlat,destination_long, alternativ
         "alternative_route.max_paths": alternatives,
         "key": GRAPHOPPER_API_KEY
     }
-    response = requests.get(GRAPHOPPER_URL, params=params)
+    response = requests.get(GRAPHOPPER_URL + "/route", params=params)
     data = response.json()
     routes = []
     for idx, r in enumerate(data["paths"]):
