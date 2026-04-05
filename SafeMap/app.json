@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.SafeMap"
     },
     "web": {
       "output": "static",
@@ -39,7 +40,7 @@
           }
         }
       ],
-      ["@rnmapbox/maps", { "RNMapboxMapsDownloadToken": "YOUR_MAPBOX_TOKEN" }]
+      "react-native-maps"
     ],
     "experiments": {
       "typedRoutes": true,
