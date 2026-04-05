@@ -1,17 +1,20 @@
 import fastapi
 import httpx
-import os
 import requests
-import dotenv
+import asyncio
+import json
 from shapely.geometry import Point, LineString
 from shapely.ops import unary_union
 import datetime
 from supabase_client import get_supabase_client
 from collections import Counter
 import math
-dotenv.load_dotenv()
+from config import get_bu_api_key, get_gh_creds
+from pydantic import BaseModel
+from typing import Optional
 
-GRAPHOPPER_API_KEY = os.getenv('GH_API_KEY')
+GRAPHOPPER_API_KEY = get_gh_creds()
+GRAPHOPPER_URL = "https://graphhopper.com/api/1/route"
 
 def get_routes(start_lat, start_lon, destination_lat,destination_long, alternatives=3):
     params = {
@@ -27,7 +30,14 @@ def get_routes(start_lat, start_lon, destination_lat,destination_long, alternati
     data = response.json()
     routes = []
     for idx, r in enumerate(data["paths"]):
-        route_coords = [(pt["lat"], pt["lng"]) for pt in r["points"]["coordinates"]]
+        # Handle GeoJSON LineString format from GraphHopper
+        # coordinates are [lng, lat] pairs
+        if isinstance(r.get("points"), dict) and "coordinates" in r["points"]:
+            # Convert [lng, lat] to (lat, lng) tuples
+            route_coords = [(pt[1], pt[0]) for pt in r["points"]["coordinates"]]
+        else:
+            route_coords = []
+        
         routes.append({
             "route_id": f"route_{idx+1}",
             "distance_m": r["distance"],
@@ -49,20 +59,20 @@ def get_near_crimes(routes):
     # STAGE 4: Query nearby crimes for each route
     # --------------------------
     supabase = get_supabase_client()
-    response = supabase.table("crime-data").select("Incident_date, crime_type, Latitude, Longitude").execute()
+    response = supabase.table("crime-data").select("incident_date, crime_type, latitude, longitude").execute()
     crimes = response.data
 
     nearby_crimes = {}
     for route_id, corridor in route_corridors.items():
         matches = []
         for crime in crimes:
-            point = Point(crime["Latitude"], crime["Longitude"])
+            point = Point(crime["latitude"], crime["longitude"])
             if corridor.contains(point):
                 matches.append({
-                    "lat": crime["Latitude"],
-                    "lng": crime["Longitude"],
+                    "lat": crime["latitude"],
+                    "lng": crime["longitude"],
                     "crime_type": int(crime["crime_type"]),
-                    "date": crime["Incident_date"]
+                    "date": crime["incident_date"]
                 })
         nearby_crimes[route_id] = matches
     return nearby_crimes
@@ -261,21 +271,24 @@ def get_safest_route(routes, nearby_crimes):
         }
 
     safest_route = min(routes, key=lambda r: route_scores[r["route_id"]])
-    safest_route_id = safest_route["route_id"]
+    #safest_route_id = safest_route["route_id"]
     
+    # return {
+    #     "route": safest_route,
+    #     "risk_score": route_scores[safest_route_id],
+    #     "patterns": route_patterns[safest_route_id],
+    #     "all_route_scores": route_scores,
+    #     "all_patterns": route_patterns
+    # }
     return {
-        "route": safest_route,
-        "risk_score": route_scores[safest_route_id],
-        "patterns": route_patterns[safest_route_id],
-        "all_route_scores": route_scores,
-        "all_patterns": route_patterns
+        "route": safest_route
     }
     
 
     # Recency multipliers
 def recency_multiplier(incident_date_str):
-    incident_date = datetime.strptime(incident_date_str, "%Y-%m-%d")
-    days_old = (datetime.now() - incident_date).days
+    incident_date = datetime.datetime.strptime(incident_date_str, "%Y-%m-%d")
+    days_old = (datetime.datetime.now() - incident_date).days
     if days_old <= 7:
         return 1.0
     elif days_old <= 30:
@@ -303,29 +316,201 @@ def point_to_route_distance(point_lat, point_lng, route_coords):
     return point.distance(line)
 
 
-def find_stores_along_route(route_coords, stores_df, buffer_meters=100):
-    buffer_deg = buffer_meters / 111000  # rough meters → degrees
-    route_line = LineString(route_coords)
-    route_corridor = route_line.buffer(buffer_deg)
+async def find_stores_along_route(route_coords, buffer_meters=500, sample_size=5):
+    """
+    Find stores along a route by sampling key points and using Browser Use API.
+    
+    Uses Browser Use Cloud to search for stores near strategic points along the route.
+    This reduces API calls by only checking sampled points instead of every point.
+    
+    Args:
+        route_coords: List of (lat, lng) tuples representing the route
+        buffer_meters: Search radius in meters around each sample point (default: 500m)
+        sample_size: Number of points to sample along the route (default: 5)
+    
+    Returns:
+        List of unique stores found along the route, sorted by distance from route.
+        Store format: {"name": str, "category": str, "lat": float, "lng": float, ...}
+    """
+    if not route_coords or len(route_coords) == 0:
+        return []
+    
+    # Await the async function
+    #return await _find_stores_async(route_coords, buffer_meters, sample_size)
+    
+    midpoint_idx = len(route_coords) // 2
+    midpoint_lat, midpoint_lng = route_coords[midpoint_idx]
 
-    nearby_stores = []
+    return await _find_stores_overpass(midpoint_lat,midpoint_lng, buffer_meters)
 
-    for _, store in stores_df.iterrows():
-        store_point = Point(store["lat"], store["lng"])
 
-        if route_corridor.contains(store_point):
-            dist_deg = store_point.distance(route_line)
-            dist_m = dist_deg * 111000
+async def _find_stores_async(route_coords, buffer_meters=500, sample_size=1):
+    """
+    Find 5 nearby stores near the midpoint of the route using Overpass API (fast).
+    Then check their hours using Browser Use API.
+    """
+    if not route_coords or len(route_coords) == 0:
+        return []
+    
+    # Get the midpoint of the route
+    midpoint_idx = len(route_coords) // 2
+    midpoint_lat, midpoint_lng = route_coords[midpoint_idx]
+    
+    # Step 1: Use Overpass API to find 5 nearby stores (free, fast)
+    stores_data = await _find_stores_overpass(midpoint_lat, midpoint_lng)
+    return stores_data
+    if not stores_data:
+        return []
+    
+    # Step 2: Check hours of each store using Browser Use
+    api_key = get_bu_api_key()
+    if not api_key:
+        print("Warning: BROWSER_USE_API_KEY not set. Returning stores without hours.")
+        return stores_data
+    
+    enriched_stores = []
+    async with httpx.AsyncClient() as client:
+        for store in stores_data[:2]:
+            store_name = store.get("name", "")
+            store_type = store.get("type", "store")
+            
+            if not store_name:
+                enriched_stores.append(store)
+                continue
+            
+            # Create a task to check store hours
+            hours_task = (
+                f"Find the operating hours for '{store_name}'. "
+                f"Use Google Maps or Google Search to look up the store. "
+                f"Return ONLY a JSON object with this exact format (no markdown, no text): "
+                f"{{'store_name': '{store_name}', 'hours': 'opening-closing hours (e.g., 9AM-10PM)', 'is_open_now': true/false}}"
+            )
+            
+            try:
+                # Create session to check hours
+                headers = {"X-Browser-Use-API-Key": api_key, "Content-Type": "application/json"}
+                
+                hours_session = await client.post(
+                    "https://api.browser-use.com/api/v3/sessions",
+                    json={"task": hours_task, "model": "claude-sonnet-4.6"},
+                    headers=headers,
+                    timeout=120.0
+                )
+                
+                if hours_session.status_code not in (200, 201):
+                    enriched_stores.append(store)
+                    continue
+                
+                hours_session_id = hours_session.json().get("id")
+                if not hours_session_id:
+                    enriched_stores.append(store)
+                    continue
+                
+                # Poll for hours information
+                import asyncio as aio
+                hours_start = datetime.datetime.now()
+                hours_data = None
+                
+                while True:
+                    hours_status = await client.get(
+                        f"https://api.browser-use.com/api/v3/sessions/{hours_session_id}",
+                        headers=headers,
+                        timeout=30.0
+                    )
+                    
+                    if hours_status.status_code != 200:
+                        break
+                    
+                    hours_status_data = hours_status.json()
+                    status = hours_status_data.get("status")
+                    
+                    if status in ["idle", "stopped", "error", "timed_out"]:
+                        output = hours_status_data.get("output")
+                        if output:
+                            try:
+                                hours_data = json.loads(output)
+                            except json.JSONDecodeError:
+                                pass
+                        break
+                    
+                    elapsed = (datetime.datetime.now() - hours_start).total_seconds()
+                    if elapsed > 60:
+                        break
+                    
+                    await aio.sleep(2)
+                
+                # Add store with hours information
+                if hours_data:
+                    store["hours"] = hours_data.get("hours", "Unknown")
+                    store["is_open_now"] = hours_data.get("is_open_now")
+                
+                enriched_stores.append(store)
+                
+            except Exception as e:
+                print(f"Error checking hours for {store_name}: {e}")
+                enriched_stores.append(store)
+    
+    return enriched_stores
 
-            nearby_stores.append({
-                "name": store["name"],
-                "category": store["category"],
-                "lat": store["lat"],
-                "lng": store["lng"],
-                "distance_from_route_m": round(dist_m, 1)
-            })
 
-    # Sort closest stores first
-    nearby_stores.sort(key=lambda s: s["distance_from_route_m"])
+async def _find_stores_overpass(lat: float, lng: float, radius_meters: int = 1000):
+    amenity_filter = "convenience|supermarket|restaurant|pharmacy|police"
+    
+    # "around" is faster than bbox for point-radius searches
+    query = f"""
+    [out:json][timeout:6];
+    (
+      node[amenity~"{amenity_filter}"](around:{radius_meters},{lat},{lng});
+      way[amenity~"{amenity_filter}"](around:{radius_meters},{lat},{lng});
+    );
+    out center 10;
+    """
 
-    return nearby_stores
+    # Try multiple Overpass endpoints, use whichever responds first
+    endpoints = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+    ]
+
+    async with httpx.AsyncClient() as client:
+        tasks = [
+            client.post(url, data=query, timeout=8.0)
+            for url in endpoints
+        ]
+        # Race them — first one to respond wins
+        data = None
+        for coro in asyncio.as_completed(tasks):
+            try:
+                response = await coro
+                if response.status_code == 200:
+                    data = response.json()
+                    break
+            except Exception:
+                continue
+
+    if not data:
+        return []
+
+    all_stores = []
+    for element in data.get('elements', []):
+        elem_lat = element['center'].get('lat') if 'center' in element else element.get('lat')
+        elem_lng = element['center'].get('lon') if 'center' in element else element.get('lon')
+        if elem_lat is None or elem_lng is None:
+            continue
+        tags = element.get('tags', {})
+        all_stores.append({
+            'name': tags.get('name', tags.get('amenity', 'Unknown').capitalize()),
+            'type': tags.get('amenity'),
+            'lat': elem_lat,
+            'lng': elem_lng,
+        })
+
+    all_stores.sort(key=lambda s: (s['lat'] - lat)**2 + (s['lng'] - lng)**2)
+
+    seen, unique = set(), []
+    for store in all_stores:
+        if store['name'].lower() not in seen:
+            seen.add(store['name'].lower())
+            unique.append(store)
+
+    return unique[:5]
